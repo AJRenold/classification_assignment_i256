@@ -6,6 +6,9 @@ from itertools import islice
 
 class AssignmentCorpus():
     def __init__(self, source_dir):
+        """
+        init with path do the directory with the .txt files
+        """
         
         self.source_dir = source_dir
         self.files = self.getFiles(self.source_dir)
@@ -14,7 +17,6 @@ class AssignmentCorpus():
     def getFiles(self, source_dir):
         files = [ f for (dirpath, dirnames, filenames) in os.walk(source_dir) 
                     for f in filenames if f[-4:] == '.txt' ]
-
         return files
         
     def readFiles(self, files, source_dir):
@@ -34,9 +36,37 @@ class AssignmentCorpus():
         tags = self.cleanTags(raw_tags)
         
         if len(sent) > 1: ## Handle exceptional lines (with more than one sentence) here
-            pass 
+            
+            ## If you want to understand how this works, uncomment print statements
+            #print 'RAW',line
+            #print 
+             
+            # others tested, (?:(?<!\d)[\.|\?]\s+) |(?:#{2})   (?:[\.|\?]\s+)|(?:#{2})
+            # best = (?:(?<!\d)[\.|\?]\s+)(?!\d.)|(?:(?<!#{2} )#{2})
+            
+            # split line on end of sentences AND hashes, with conditions = still not perfect but works in almost all cases
+            split_line = re.split(r'(?:(?<!\d)[\.|\?]\s+)(?!\d.)|(?:(?<!#{2} )#{2})', line) 
+            for i, part in enumerate(split_line):
+                if re.search(r'\[([\+|\-])([0-9])\]', part): ## check if first line has any tags
+                    tags =  self.cleanTags(part)
+                    sent = split_line[i+1]
+                    #print 'tags found'
+                    #print tags
+                    #print sent
+                    #print
+                    yield tags, sent
+            
+                elif i % 2 == 0 and i < len(split_line)-1: ## else yield the sentence without tags
+                    tags = []
+                    sent = split_line[i+1]
+                    #print 'no tags'
+                    #print tags
+                    #print sent
+                    #print
+                    yield tags, sent
 
-        yield tags, sent
+        else:
+            yield tags, sent
     
     def cleanTags(self, raw_tags):
         tags = []
