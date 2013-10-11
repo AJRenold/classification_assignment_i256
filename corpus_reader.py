@@ -65,8 +65,11 @@ class AssignmentCorpus():
                     #print
                     yield tags, sent
 
+        elif len(sent) == 1:
+            yield tags, sent[0]
+
         else:
-            yield tags, sent
+            pass
     
     def cleanTags(self, raw_tags):
         tags = []
@@ -81,3 +84,8 @@ class AssignmentCorpus():
                         tags.append((text, score, other))
                         
         return tags
+
+if __name__ == "__main__":
+
+    corpus = AssignmentCorpus('product_data_training_heldout/training/')
+    print corpus.sents[:10]
