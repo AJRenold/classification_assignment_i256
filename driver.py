@@ -7,6 +7,7 @@ from nltk.tokenize import word_tokenize
 import progressbar
 import json
 import string
+import pickle
 
 pr = pprint.PrettyPrinter(indent=2)
 
@@ -50,6 +51,8 @@ def sanitize(sents):
     # ignore all sents with no tag or no sent
     sents = [(tag, sent) for tag, sent in sents if sent]
     # simplify each tags list to an average of ratings
+    
+    # does it make sense to simplify tags to 1, 0 and -1?
     for i in range(len(sents)):
         tag, sent = sents[i]
         if not tag:
@@ -67,13 +70,23 @@ def sanitize(sents):
     for i in range(len(sents)):
         tag, sent = sents[i]
         if isinstance(sent, list):
+            print 'list'
             sents[i] = (tag, sent[0])
     # remove whitespace in sents
     sents = [(tag, sent.strip()) for tag, sent in sents]
     return sents
 
-
+# this can be an AssignmentCorpus method
 def get_tagged_sents(sents):
+
+    try:
+        with open('tagged_sents.pkl', 'rb') as infile:
+            print 'Tagged_sentences pickle found, delete tagged_sents.pkl to reset cache'
+            tagged_sents = pickle.load(infile)
+            return tagged_sents
+    except:
+        print 'No tagged sentences stored'
+
     print 'tagging sentences'
     tagged_sents = []
     i, bar = 0, pbar(len(sents))
@@ -83,6 +96,11 @@ def get_tagged_sents(sents):
         i += 1
         bar.update(i)
     bar.finish()
+
+    print 'caching tagged_sents as tagged_sents.pkl'
+    with open('tagged_sents.pkl', 'wb') as outfile:
+        pickle.dump(tagged_sents, outfile)
+
     return tagged_sents
 
 
@@ -146,6 +164,7 @@ def main():
         feat2 = feature_adjectives_curated(sent, pos_words, neg_words)
         feat1.update(feat2)
         data.append((feat1, tag))
+
     print 'Naive Bayes:\t%s' % evaluate(nltk.NaiveBayesClassifier, data, 10)
     print 'Decision Tree:\t%s' % evaluate(nltk.DecisionTreeClassifier, data, 10)
 
