@@ -8,6 +8,7 @@ import progressbar
 import json
 import string
 import pickle
+import re
 
 pr = pprint.PrettyPrinter(indent=2)
 
@@ -65,6 +66,7 @@ def sanitize(sents):
             elif avg_rating < 0:
                 sents[i] = (-1, sent)
             else:
+                pass
                 sents[i] = (0, sent)
     # convert sents to strings instead of lists
     for i in range(len(sents)):
@@ -139,6 +141,49 @@ def feature_adjectives_curated(sent, pos_words, neg_words):
             features['neg'] += 1
     return features
 
+def get_unigram_features(sent):
+    ## all unigrams
+        
+    features = {}
+    for word in sent.lower().split(' '):
+        if word not in string.punctuation:
+            features['contains({})'.format(word)] = True
+    
+    return features
+
+def words_maximizing_prob_diff(sents, n):
+    ## extracts n unigrams that maximize class probablity diff
+    
+    def get_max_diff(words, pos, neg):
+        prob_diff_words = []
+        for word in words:
+            p = pos.prob(word)
+            n = neg.prob(word)
+            prob_diff_words.append((abs(p - n), word))
+
+        return sorted(prob_diff_words, reverse=True)
+    
+    cfd = nltk.ConditionalFreqDist((label, word)
+                               for label, sent in sents
+                               for word in word_tokenize(sent)
+                               if word not in string.punctuation 
+                               and label != 0)
+    
+    cpdist = nltk.ConditionalProbDist(cfd, nltk.MLEProbDist)
+    pos = cpdist[1]
+    neg = cpdist[-1]
+    
+    words = list(set(pos.samples()).union(set(neg.samples())))
+    
+    return get_max_diff(words, pos, neg)[:n]
+
+def feature_unigram_probdiff(sent, max_diff_words):
+    features = {}
+    for word in word_tokenize(sent):
+        if word in max_diff_words:
+            features['contains({})'.format(word)] = True
+
+    return features
 
 def main():
     training_corpus = AssignmentCorpus(
@@ -146,6 +191,7 @@ def main():
     heldout_corpus = AssignmentCorpus('product_data_training_heldout/heldout/')
     # We should do cross validation on all the data given
     all_sents = training_corpus.sents + heldout_corpus.sents
+
     # This is the data we extract features and do cross validation on.
     sents = sanitize(all_sents)
 
@@ -157,12 +203,16 @@ def main():
     neg_words = set([str(x) for x in json.loads(open('negative_words.json')
                                                 .read().decode('utf-8', 'ignore'))])
 
+    max_prob_diff_words = set([ word for diff, word in words_maximizing_prob_diff(sents, 600)])
+
     # Extract features.
     data = []
     for tag, sent in sents:
         feat1 = feature_adjectives(sent, adjectives)
         feat2 = feature_adjectives_curated(sent, pos_words, neg_words)
+        feat3 = feature_unigram_probdiff(sent, max_prob_diff_words)
         feat1.update(feat2)
+        feat1.update(feat3)
         data.append((feat1, tag))
 
     print 'Naive Bayes:\t%s' % evaluate(nltk.NaiveBayesClassifier, data, 10)
