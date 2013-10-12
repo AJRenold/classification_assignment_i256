@@ -66,7 +66,6 @@ def sanitize(sents):
             elif avg_rating < 0:
                 sents[i] = (-1, sent)
             else:
-                pass
                 sents[i] = (0, sent)
     # convert sents to strings instead of lists
     for i in range(len(sents)):
