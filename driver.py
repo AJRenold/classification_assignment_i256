@@ -9,6 +9,11 @@ import json
 import string
 import pickle
 import re
+from itertools import islice
+from nltk.corpus import stopwords
+
+stopwords = { word: True for word in stopwords.words('english') }
+
 
 pr = pprint.PrettyPrinter(indent=2)
 
@@ -36,15 +41,25 @@ def k_fold_cross_validation(items, k):
 
 def evaluate(classifier, data, k):
     accuracies = []
+    ref = []
+    test = []
+
     print 'evaluating %s using k fold cross validation. k = %s' % (classifier, k)
     i, bar = 0, pbar(k)
     bar.start()
     for training, validation in k_fold_cross_validation(data, k):
         model = classifier.train(training)
+        #model.show_most_informative_features(15)
         accuracies.append(nltk.classify.accuracy(model, validation))
+        for feat, tag in validation:
+            guess = model.classify(feat)
+            ref.append(tag)
+            test.append(guess)
+
         i += 1
         bar.update(i)
     bar.finish()
+    print nltk.ConfusionMatrix(ref, test)
     return sum(accuracies) * 1.0 / len(accuracies)
 
 
@@ -155,32 +170,81 @@ def words_maximizing_prob_diff(sents, n):
     
     def get_max_diff(words, pos, neg):
         prob_diff_words = []
+        pos_fd = pos.freqdist()
+        neg_fd = neg.freqdist()
+        
         for word in words:
             p = pos.prob(word)
             n = neg.prob(word)
-            prob_diff_words.append((abs(p - n), word))
+            
+            if pos_fd[word] >= 15 or neg_fd[word] >= 15:
+                if len(word) > 3 and word not in stopwords:
+                    if not re.findall(r'[\W]|[\d]', word):
+                        prob_diff_words.append((abs(p - n), word))
 
         return sorted(prob_diff_words, reverse=True)
     
-    cfd = nltk.ConditionalFreqDist((label, word)
+    cfd = nltk.ConditionalFreqDist((label, re.sub(r'\W\s','',word))
                                for label, sent in sents
-                               for word in word_tokenize(sent)
+                               for word in sent.lower().split(' ')
                                if word not in string.punctuation 
                                and label != 0)
     
     cpdist = nltk.ConditionalProbDist(cfd, nltk.MLEProbDist)
     pos = cpdist[1]
     neg = cpdist[-1]
-    
+
     words = list(set(pos.samples()).union(set(neg.samples())))
     
     return get_max_diff(words, pos, neg)[:n]
 
+def get_best_word_features(sents):
+    word_fd = nltk.FreqDist()
+    label_word_fd = nltk.ConditionalFreqDist()
+
+    for label, sent in sents:
+        for word in word_tokenize(sent.lower()):
+            if label == 1:
+                word_fd.inc(word)
+                label_word_fd['pos'].inc(word)
+
+            elif label == -1:
+                word_fd.inc(word)
+                label_word_fd['neg'].inc(word)
+
+            else:
+                label_word_fd['neut'].inc(word)
+
+    # n_ii = label_word_fd[label][word]
+    # n_ix = word_fd[word]
+    # n_xi = label_word_fd[label].N()
+    # n_xx = label_word_fd.N()
+    pos_word_count = label_word_fd['pos'].N()
+    neg_word_count = label_word_fd['neg'].N()
+    total_word_count = pos_word_count + neg_word_count
+
+    word_scores = {}
+
+    for word, freq in word_fd.iteritems():
+        pos_score = nltk.BigramAssocMeasures.chi_sq(label_word_fd['pos'][word],
+                (freq, pos_word_count), total_word_count)
+        neg_score = nltk.BigramAssocMeasures.chi_sq(label_word_fd['neg'][word],
+                (freq, neg_word_count), total_word_count)
+        word_scores[word] = pos_score + neg_score
+
+    best = sorted(word_scores.iteritems(), key=lambda (w,s): s, reverse=True)[:2000]
+    bestwords = set([w for w, s in best])
+
+    return bestwords
+
 def feature_unigram_probdiff(sent, max_diff_words):
     features = {}
-    for word in word_tokenize(sent):
-        if word in max_diff_words:
-            features['contains({})'.format(word)] = True
+    #for word in word_tokenize(sent):
+    #    if word in max_diff_words:
+    #        features['contains({})'.format(word)] = True
+    sent_words = set(word_tokenize(sent))
+    for word in max_diff_words:
+        features['contains(%s)' % word] = word in sent_words
 
     return features
 
@@ -202,8 +266,11 @@ def main():
     neg_words = set([str(x) for x in json.loads(open('negative_words.json')
                                                 .read().decode('utf-8', 'ignore'))])
 
-    max_prob_diff_words = set([ word for diff, word in words_maximizing_prob_diff(sents, 600)])
+    max_prob_diff_words = set([ word for diff, word in words_maximizing_prob_diff(sents, 200)])
 
+    #max_prob_diff_words = get_best_word_features(sents)
+
+    print list(max_prob_diff_words)[:100]
     # Extract features.
     data = []
     for tag, sent in sents:
@@ -215,7 +282,7 @@ def main():
         data.append((feat1, tag))
 
     print 'Naive Bayes:\t%s' % evaluate(nltk.NaiveBayesClassifier, data, 10)
-    print 'Decision Tree:\t%s' % evaluate(nltk.DecisionTreeClassifier, data, 10)
+    #print 'Decision Tree:\t%s' % evaluate(nltk.DecisionTreeClassifier, data, 10)
 
 
 if __name__ == '__main__':
