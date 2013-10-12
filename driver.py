@@ -198,45 +198,6 @@ def words_maximizing_prob_diff(sents, n):
     
     return get_max_diff(words, pos, neg)[:n]
 
-def get_best_word_features(sents):
-    word_fd = nltk.FreqDist()
-    label_word_fd = nltk.ConditionalFreqDist()
-
-    for label, sent in sents:
-        for word in word_tokenize(sent.lower()):
-            if label == 1:
-                word_fd.inc(word)
-                label_word_fd['pos'].inc(word)
-
-            elif label == -1:
-                word_fd.inc(word)
-                label_word_fd['neg'].inc(word)
-
-            else:
-                label_word_fd['neut'].inc(word)
-
-    # n_ii = label_word_fd[label][word]
-    # n_ix = word_fd[word]
-    # n_xi = label_word_fd[label].N()
-    # n_xx = label_word_fd.N()
-    pos_word_count = label_word_fd['pos'].N()
-    neg_word_count = label_word_fd['neg'].N()
-    total_word_count = pos_word_count + neg_word_count
-
-    word_scores = {}
-
-    for word, freq in word_fd.iteritems():
-        pos_score = nltk.BigramAssocMeasures.chi_sq(label_word_fd['pos'][word],
-                (freq, pos_word_count), total_word_count)
-        neg_score = nltk.BigramAssocMeasures.chi_sq(label_word_fd['neg'][word],
-                (freq, neg_word_count), total_word_count)
-        word_scores[word] = pos_score + neg_score
-
-    best = sorted(word_scores.iteritems(), key=lambda (w,s): s, reverse=True)[:2000]
-    bestwords = set([w for w, s in best])
-
-    return bestwords
-
 def feature_unigram_probdiff(sent, max_diff_words):
     features = {}
     #for word in word_tokenize(sent):
@@ -268,9 +229,6 @@ def main():
 
     max_prob_diff_words = set([ word for diff, word in words_maximizing_prob_diff(sents, 200)])
 
-    #max_prob_diff_words = get_best_word_features(sents)
-
-    print list(max_prob_diff_words)[:100]
     # Extract features.
     data = []
     for tag, sent in sents:
