@@ -11,6 +11,7 @@ import pickle
 import re
 from itertools import islice
 from nltk.corpus import stopwords
+from Bigrams_Features import *
 
 pr = pprint.PrettyPrinter(indent=2)
 
@@ -338,6 +339,9 @@ def main():
     max_prob_diff_words = set([ word for diff, word in words_maximizing_prob_diff(sents, 500, stopwords)])
     max_prob_diff_patterns = patterns_maximizing_prob_diff(tagged_sents, 500)
 
+    # max_prob_diff_bigrams = set([bigram for diff, bigram in bigrams_maximizing_prob_diff(sents, 500, stopwords)])
+    bigrams_best = best_bigrams(sents, stopwords)
+
     # Extract features.
     data = []
     for tag, sent in islice(sents,None):
@@ -345,9 +349,12 @@ def main():
         feat2 = feature_adjectives_curated(sent, pos_words, neg_words)
         feat3 = feature_unigram_probdiff(sent, max_prob_diff_words)
         feat4 = feature_patterns(sent, max_prob_diff_patterns)
+        #feat5 = feature_bigrams(sent, max_prob_diff_bigrams)
+        feat5 = feature_bigrams(sent, bigrams_best)
         feat1.update(feat2)
         feat1.update(feat3)
         feat1.update(feat4)
+        feat1.update(feat5)
         data.append((feat1, tag))
 
     print 'Naive Bayes:\t%s' % evaluate(nltk.NaiveBayesClassifier, data, 10)
