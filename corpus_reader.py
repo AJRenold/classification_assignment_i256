@@ -32,44 +32,47 @@ class AssignmentCorpus():
         return sents
                         
     def cleanLine(self, line):
-        raw_tags, sent = line.split('##')[0], line.split('##')[1:]
-        tags = self.cleanTags(raw_tags)
         
-        if len(sent) > 1: ## Handle exceptional lines (with more than one sentence) here
+        if '##' in line:
+
+            raw_tags, sent = line.split('##')[0], line.split('##')[1:]
+            tags = self.cleanTags(raw_tags)
+        
+            if len(sent) > 1: ## Handle exceptional lines (with more than one sentence) here
             
-            ## If you want to understand how this works, uncomment print statements
-            #print 'RAW',line
-            #print 
+                ## If you want to understand how this works, uncomment print statements
+                #print 'RAW',line
+                #print 
              
-            # others tested, (?:(?<!\d)[\.|\?]\s+) |(?:#{2})   (?:[\.|\?]\s+)|(?:#{2})
-            # best = (?:(?<!\d)[\.|\?]\s+)(?!\d.)|(?:(?<!#{2} )#{2})
+                # others tested, (?:(?<!\d)[\.|\?]\s+) |(?:#{2})   (?:[\.|\?]\s+)|(?:#{2})
+                # best = (?:(?<!\d)[\.|\?]\s+)(?!\d.)|(?:(?<!#{2} )#{2})
             
-            # split line on end of sentences AND hashes, with conditions = still not perfect but works in almost all cases
-            split_line = re.split(r'(?:(?<!\d)[\.|\?]\s+)(?!\d.)|(?:(?<!#{2} )#{2})', line) 
-            for i, part in enumerate(split_line):
-                if re.search(r'\[([\+|\-])([0-9])\]', part): ## check if first line has any tags
-                    tags =  self.cleanTags(part)
-                    sent = split_line[i+1]
-                    #print 'tags found'
-                    #print tags
-                    #print sent
-                    #print
-                    yield tags, sent
+                # split line on end of sentences AND hashes, with conditions = still not perfect but works in almost all cases
+                split_line = re.split(r'(?:(?<!\d)[\.|\?]\s+)(?!\d.)|(?:(?<!#{2} )#{2})', line) 
+                for i, part in enumerate(split_line):
+                    if re.search(r'\[([\+|\-])([0-9])\]', part): ## check if first line has any tags
+                        tags =  self.cleanTags(part)
+                        sent = split_line[i+1]
+                        #print 'tags found'
+                        #print tags
+                        #print sent
+                        #print
+                        yield tags, sent
             
-                elif i % 2 == 0 and i < len(split_line)-1: ## else yield the sentence without tags
-                    tags = []
-                    sent = split_line[i+1]
-                    #print 'no tags'
-                    #print tags
-                    #print sent
-                    #print
-                    yield tags, sent
+                    elif i % 2 == 0 and i < len(split_line)-1: ## else yield the sentence without tags
+                        tags = []
+                        sent = split_line[i+1]
+                        #print 'no tags'
+                        #print tags
+                        #print sent
+                        #print
+                        yield tags, sent
 
-        elif len(sent) == 1:
-            yield tags, sent[0]
+            elif len(sent) == 1:
+                yield tags, sent[0]
 
-        else:
-            pass
+            else:
+                pass
     
     def cleanTags(self, raw_tags):
         tags = []
