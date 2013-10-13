@@ -12,6 +12,8 @@ import re
 from itertools import islice
 from nltk.corpus import stopwords
 from Bigrams_Features import *
+from Unigram_Features import words_maximizing_prob_diff, feature_unigram_probdiff
+from Bigram_Pattern_Features import patterns_maximizing_prob_diff, feature_patterns
 
 pr = pprint.PrettyPrinter(indent=2)
 
@@ -154,167 +156,8 @@ def feature_adjectives_curated(sent, pos_words, neg_words):
             features['pos'] += 1
         elif word.lower() in neg_words:
             features['neg'] += 1
-    return features
-
-def get_unigram_features(sent):
-    ## all unigrams
-        
-    features = {}
-    for word in sent.lower().split(' '):
-        if word not in string.punctuation:
-            features['contains({})'.format(word)] = True
-    
-    return features
-
-def words_maximizing_prob_diff(sents, n, stopwords):
-    ## extracts n unigrams that maximize class probablity diff
-    
-    ex = set(['router','ipod','norton','jack','apex','diaper','canon',\
-            'two','radio','nomad','nokia','phone','disc','month','apple', 'linksys', \
-        'nikon'])
-
-    def get_max_diff(words, pos, neg):
-        prob_diff_words = []
-        pos_fd = pos.freqdist()
-        neg_fd = neg.freqdist()
-        
-        for word in words:
-            p = pos.prob(word)
-            n = neg.prob(word)
-            
-            if pos_fd[word] >= 15 or neg_fd[word] >= 15:
-                if len(word) > 3 and word not in stopwords: #and word not in ex:
-                    if not re.findall(r'[\W]|[\d]', word):
-                        prob_diff_words.append((abs(p - n), word))
-
-        return sorted(prob_diff_words, reverse=True)
-    
-    cfd = nltk.ConditionalFreqDist((label, re.sub(r'\W\s','',word))
-                               for label, sent in sents
-                               for word in sent.lower().split(' ')
-                               if word not in string.punctuation 
-                               and label != 0)
-    
-    cpdist = nltk.ConditionalProbDist(cfd, nltk.MLEProbDist)
-    pos = cpdist[1]
-    neg = cpdist[-1]
-
-    words = list(set(pos.samples()).union(set(neg.samples())))
-    
-    return get_max_diff(words, pos, neg)[:n]
-
-def feature_unigram_probdiff(sent, max_diff_words):
-    features = {}
-    #for word in word_tokenize(sent):
-    #    if word in max_diff_words:
-    #        features['contains({})'.format(word)] = True
-    sent_words = set(word_tokenize(sent.lower()))
-    for word in max_diff_words:
-        features['contains(%s)' % word] = word in sent_words
 
     return features
-
-def patterns_maximizing_prob_diff(tagged_sents, n):
-    ## extracts n pattenrs that maximize class probablity diff from:
-    patterns = ['JJ NN|NNS','RB|RBR|RBS JJ', 'JJ JJ', 'NN|NNS JJ', 'RB|RBR|RBS VB|VBD|VBN|VBG']
-    
-    def posPatternFinder(tagged_sent, pattern):
-        valid_pos = ['ADJ','ADV','CNJ','DET','EX','FW','MOD','N','NP','NUM','PRO' \
-                     ,'P','TO','UH','V','VD','VG','VN','WH', 'NN', 'JJ', 'NNS', 'RB', 'RBR', 'RBS', \
-                     'VB', 'VBD', 'VBN', 'VBG' ]
-    
-        matches = []
-        pattern = pattern.split(' ')
-        n = len(pattern)
-        for ng in nltk.ngrams(tagged_sent,n):
-            match = 0
-            for i, (word, tag) in enumerate(ng):
-                if '!' in pattern[i][0]:
-                    if '|' in pattern[i]:
-                        multi = pattern[i][1:].split('|')
-                        if tag not in multi:
-                            match += 1
-                    else:
-                        if pattern[i][1:] != tag:
-                            match += 1
-                
-                elif '|' in pattern[i]:
-                    multi = pattern[i].split('|')
-                    if tag in multi:
-                        match += 1
-                elif pattern[i] in valid_pos and pattern[i] == tag:
-                    match += 1
-                elif pattern[i].lower() == word.lower():
-                    match += 1
-                elif pattern[i] == '.*':
-                    match += 1
-                    
-            if match == n:
-                matches.append(ng)
-                
-        if len(matches) > 0:
-            if len(matches) > 1:
-                pass
-                #print matches
-            return matches
-    
-    def extract_bigram_patterns(tagged_sents, patterns):
-    
-        extracted_patterns = []
-        for label, sent in islice(tagged_sents,None):
-            matches = []
-            for p in patterns:
-                m = posPatternFinder(sent, p)
-                if m:
-                    for ng in m:
-                        words = [ word.lower() for word, pos in ng ]
-                        matches.append((label, tuple(words)))
-            
-            extracted_patterns.extend(matches)
-        
-        return extracted_patterns
-    
-    def get_max_diff(patterns, pos, neg):
-        prob_diff = []
-        pos_fd = pos.freqdist()
-        neg_fd = neg.freqdist()
-        
-        for pattern in patterns:
-            p = pos.prob(pattern)
-            n = neg.prob(pattern)
-            
-            if pos_fd[pattern] >= 2 or neg_fd[pattern] >= 2:
-                prob_diff.append((abs(p - n), pattern))
-
-        return sorted(prob_diff, reverse=True)
-
-    input_patterns = extract_bigram_patterns(tagged_sents, patterns)
-    
-    cfd = nltk.ConditionalFreqDist(
-                                   (label, pattern)
-                                   for label, pattern in input_patterns )
-    
-    cpdist = nltk.ConditionalProbDist(cfd, nltk.MLEProbDist)
-    pos = cpdist[1]
-    neg = cpdist[-1]
-    
-    patterns = list(set(pos.samples()).union(set(neg.samples())))
-    
-    pattenrs_max_diff = get_max_diff(patterns, pos, neg)[:n]
-    return set([ pattern for diff, pattern in pattenrs_max_diff ])
-
-def feature_patterns(sent, max_prob_diff_patterns):
-    features = {}
-
-    sent_bigrams = set(nltk.bigrams(sent.lower().split(' ')))
-    for bigram in max_prob_diff_patterns:
-        if bigram in sent_bigrams:
-            features['contains({0},{1})'.format(bigram[0], bigram[1])] = True
-        else:
-            features['contains({0},{1})'.format(bigram[0], bigram[1])] = False
-
-    return features
-
 
 def main():
     training_corpus = AssignmentCorpus(
