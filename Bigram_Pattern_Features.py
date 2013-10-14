@@ -4,7 +4,7 @@ from itertools import islice
 
 def patterns_maximizing_prob_diff(tagged_sents, n):
     ## extracts n pattenrs that maximize class probablity diff from:
-    patterns = ['JJ NN|NNS','RB|RBR|RBS JJ', 'JJ JJ', 'NN|NNS JJ', 'RB|RBR|RBS VB|VBD|VBN|VBG']
+    patterns = ['JJ NN|NNS', 'RB|RBR|RBS JJ', 'JJ JJ', 'NN|NNS JJ', 'RB|RBR|RBS VB|VBD|VBN|VBG']
     
     def posPatternFinder(tagged_sent, pattern):
         valid_pos = ['ADJ','ADV','CNJ','DET','EX','FW','MOD','N','NP','NUM','PRO' \

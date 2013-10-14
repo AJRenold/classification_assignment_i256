@@ -14,7 +14,7 @@ from nltk.corpus import stopwords
 
 ## FEATURES ##
 from Adjective_Features import get_adjectives, feature_adjectives, feature_adjectives_curated
-from Bigrams_Features import *
+from Bigrams_Features import bigrams_maximizing_prob_diff, best_bigrams, feature_bigrams
 from Unigram_Features import words_maximizing_prob_diff, feature_unigram_probdiff
 from Bigram_Pattern_Features import patterns_maximizing_prob_diff, feature_patterns
 
@@ -158,7 +158,6 @@ def main():
 
     # This is the data we extract features and do cross validation on.
     sents = sanitize(all_sents)
-    print len(sents)
 
     # Do preprocessing for feature extraction
     tagged_sents = get_tagged_sents(sents)
@@ -197,7 +196,6 @@ def main():
 
     print 'Naive Bayes:\t%s' % evaluate(nltk.NaiveBayesClassifier, data, 10, verbose_errors=False)
     #print 'Decision Tree:\t%s' % evaluate(nltk.DecisionTreeClassifier, data, 10)
-
 
 if __name__ == '__main__':
     main()

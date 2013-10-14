@@ -1,8 +1,9 @@
 from corpus_reader import AssignmentCorpus
 import nltk
-from driver import *
 from nltk.collocations import BigramCollocationFinder
 from nltk.metrics import BigramAssocMeasures
+from nltk.tokenize import word_tokenize
+import string
 import itertools
 
 
@@ -94,7 +95,7 @@ def bigram_word_feats(sent, bigram_features):
     return features
 
 
-def main():
+def local_main():
     corpus = AssignmentCorpus('product_data_training_heldout/training/')
     sents = sanitize(corpus.sents)
     tagged_sents = get_tagged_sents(sents)
@@ -113,7 +114,7 @@ def main():
     #bigrams_fd = nltk.FreqDist(b for bi in bigrams_tagged for b in bi[1])
     #bigram_features = bigrams_fd.keys()[:500]
 
-    max_prob_diff_bigrams = set([bigram for diff, bigram in bigrams_maximizing_prob_diff(sents, 200)])
+    max_prob_diff_bigrams = set([bigram for diff, bigram in bigrams_maximizing_prob_diff(sents, 200, stopwords)])
 
     data = []
     for tag, sent in sents:
@@ -126,10 +127,11 @@ def main():
         feat1.update(feat2)
         feat1.update(feat3)
         feat1.update(feat4)
-        data.append((feat1, tag))
+        data.append((feat1, tag, sent))
 
     print 'Naive Bayes:\t%s' % evaluate(nltk.NaiveBayesClassifier, data, 10)
 
 
 if __name__ == '__main__':
-    main()
+    from driver import *
+    local_main()
