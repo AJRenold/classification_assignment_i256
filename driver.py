@@ -17,6 +17,7 @@ from Adjective_Features import get_adjectives, feature_adjectives, feature_adjec
 from Bigrams_Features import bigrams_maximizing_prob_diff, best_bigrams, feature_bigrams
 from Unigram_Features import words_maximizing_prob_diff, feature_unigram_probdiff
 from Bigram_Pattern_Features import patterns_maximizing_prob_diff, feature_patterns
+from Punctuation_Features import feature_exclamations, feature_questionmarks, feature_uppercase
 
 pr = pprint.PrettyPrinter(indent=2)
 
@@ -185,11 +186,16 @@ def main():
         feat4 = feature_patterns(sent, max_prob_diff_patterns)
         #feat5 = feature_bigrams(sent, max_prob_diff_bigrams)
         #feat5 = feature_bigrams(sent, bigrams_best)
+        feat6 = feature_exclamations(sent)
+        feat7 = feature_questionmarks(sent)
+        feat8 = feature_uppercase(sent)
         features.update(feat1)
         features.update(feat2)
         features.update(feat3)
         features.update(feat4)
         #features.update(feat5)
+        features.update(feat6)
+        features.update(feat7)
 
         ## Include sent for error analysis
         data.append((features, tag, sent))
@@ -199,3 +205,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+# <codecell>
+
+
