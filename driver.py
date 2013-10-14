@@ -129,13 +129,13 @@ def get_stopwords():
 # this can be an AssignmentCorpus method
 def get_tagged_sents(sents):
 
-    try:
-        with open('tagged_sents.pkl', 'rb') as infile:
-            print 'Tagged_sentences pickle found, delete tagged_sents.pkl to reset cache'
-            tagged_sents = pickle.load(infile)
-            return tagged_sents
-    except:
-        print 'No tagged sentences stored'
+    #try:
+    #    with open('tagged_sents.pkl', 'rb') as infile:
+    #        print 'Tagged_sentences pickle found, delete tagged_sents.pkl to reset cache'
+    #        tagged_sents = pickle.load(infile)
+    #        return tagged_sents
+    #except:
+    #    print 'No tagged sentences stored'
 
     print 'tagging sentences'
     tagged_sents = []
@@ -147,9 +147,9 @@ def get_tagged_sents(sents):
         bar.update(i)
     bar.finish()
 
-    print 'caching tagged_sents as tagged_sents.pkl'
-    with open('tagged_sents.pkl', 'wb') as outfile:
-        pickle.dump(tagged_sents, outfile)
+    #print 'caching tagged_sents as tagged_sents.pkl'
+    #with open('tagged_sents.pkl', 'wb') as outfile:
+    #    pickle.dump(tagged_sents, outfile)
 
     return tagged_sents
 
