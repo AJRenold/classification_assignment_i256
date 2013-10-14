@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+# <nbformat>3.0</nbformat>
+
+# <codecell>
+
 from corpus_reader import AssignmentCorpus
 import pprint
 from random import shuffle
@@ -192,7 +197,7 @@ def words_maximizing_prob_diff(sents, n, stopwords):
     cfd = nltk.ConditionalFreqDist((label, re.sub(r'\W\s','',word))
                                for label, sent in sents
                                for word in sent.lower().split(' ')
-                               if word not in string.punctuation 
+                               if word not in string.punctuation
                                and label != 0)
     
     cpdist = nltk.ConditionalProbDist(cfd, nltk.MLEProbDist)
@@ -206,8 +211,8 @@ def words_maximizing_prob_diff(sents, n, stopwords):
 def feature_unigram_probdiff(sent, max_diff_words):
     features = {}
     #for word in word_tokenize(sent):
-    #    if word in max_diff_words:
-    #        features['contains({})'.format(word)] = True
+    # if word in max_diff_words:
+    # features['contains({})'.format(word)] = True
     sent_words = set(word_tokenize(sent.lower()))
     for word in max_diff_words:
         features['contains(%s)' % word] = word in sent_words
@@ -315,6 +320,14 @@ def feature_patterns(sent, max_prob_diff_patterns):
 
     return features
 
+def feature_exclamations(sent):
+    features = {}
+    letter = '!'
+    sent_words = sent.split()
+    for word in sent_words:
+	    #Calculating no. of exclamation marks divided by word length
+        features["count(%s)" % letter] = word.count(letter) / len(word)
+    return features
 
 def main():
     training_corpus = AssignmentCorpus(
@@ -351,10 +364,12 @@ def main():
         feat4 = feature_patterns(sent, max_prob_diff_patterns)
         #feat5 = feature_bigrams(sent, max_prob_diff_bigrams)
         feat5 = feature_bigrams(sent, bigrams_best)
+        feat6 = feature_exclamations(sent)
         feat1.update(feat2)
         feat1.update(feat3)
         feat1.update(feat4)
         feat1.update(feat5)
+        feat1.update(feat6)
         data.append((feat1, tag))
 
     print 'Naive Bayes:\t%s' % evaluate(nltk.NaiveBayesClassifier, data, 10)
@@ -363,3 +378,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+# <codecell>
+
+
