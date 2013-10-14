@@ -1,3 +1,6 @@
+
+__author__ = 'AJ Renold'
+
 import string
 import re
 
@@ -15,12 +18,12 @@ def get_unigram_features(sent):
     
     return features
 
-def words_maximizing_prob_diff(sents, n, stopwords):
+def words_maximizing_prob_diff(tagged_sents, n, stopwords):
     ## extracts n unigrams that maximize class probablity diff
     
     ex = set(['router','ipod','norton','jack','apex','diaper','canon',\
             'two','radio','nomad','nokia','phone','disc','month','apple', 'linksys', \
-        'nikon'])
+        'nikon', 'windows', 'wireless'])
 
     def get_max_diff(words, pos, neg):
         prob_diff_words = []
@@ -31,18 +34,18 @@ def words_maximizing_prob_diff(sents, n, stopwords):
             p = pos.prob(word)
             n = neg.prob(word)
             
-            if pos_fd[word] >= 15 or neg_fd[word] >= 15:
-                if len(word) > 3 and word not in stopwords: #and word not in ex:
+            if pos_fd[word] >= 10 or neg_fd[word] >= 10:
+                if len(word) > 3 and word not in stopwords and word not in ex:
                     if not re.findall(r'[\W]|[\d]', word):
                         prob_diff_words.append((abs(p - n), word))
 
         return sorted(prob_diff_words, reverse=True)
     
-    cfd = nltk.ConditionalFreqDist((label, re.sub(r'\W\s','',word))
-                               for label, sent in sents
-                               for word in sent.lower().split(' ')
+    cfd = nltk.ConditionalFreqDist((label, re.sub(r'\W\s','',word.lower()))
+                               for label, sent in tagged_sents
+                               for word, pos in sent
                                if word not in string.punctuation 
-                               and label != 0)
+                               and label != 0 and not pos.startswith('N'))
     
     cpdist = nltk.ConditionalProbDist(cfd, nltk.MLEProbDist)
     pos = cpdist[1]

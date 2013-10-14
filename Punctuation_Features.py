@@ -77,3 +77,4 @@ def feature_emoticons(sent):
             else:
                 features["emoticon(%s)" % emoticons[index]] = False;
     return features
+

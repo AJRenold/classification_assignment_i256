@@ -1,3 +1,6 @@
+
+__author__ = 'group G9'
+
 from corpus_reader import AssignmentCorpus
 import pprint
 from random import shuffle
@@ -14,7 +17,7 @@ from nltk.corpus import stopwords
 
 ## FEATURES ##
 from Adjective_Features import get_adjectives, feature_adjectives, feature_adjectives_curated
-from Bigrams_Features import *
+from Bigrams_Features import bigrams_maximizing_prob_diff, best_bigrams, feature_bigrams
 from Unigram_Features import words_maximizing_prob_diff, feature_unigram_probdiff
 from Bigram_Pattern_Features import patterns_maximizing_prob_diff, feature_patterns
 from Punctuation_Features import feature_exclamations, feature_questionmarks, feature_uppercase
@@ -56,6 +59,7 @@ def evaluate(classifier, data, k, verbose_errors=False):
     bar.start()
     for training, validation, val_sents in k_fold_cross_validation(data, k):
         model = classifier.train(training)
+        #model.show_most_informative_features(20)
         accuracies.append(nltk.classify.accuracy(model, validation))
         for j, (feat, tag) in enumerate(validation):
             guess = model.classify(feat)
@@ -159,7 +163,6 @@ def main():
 
     # This is the data we extract features and do cross validation on.
     sents = sanitize(all_sents)
-    print len(sents)
 
     # Do preprocessing for feature extraction
     tagged_sents = get_tagged_sents(sents)
@@ -171,13 +174,21 @@ def main():
 
     stopwords = get_stopwords()
 
-    max_prob_diff_words = set([ word for diff, word in words_maximizing_prob_diff(sents, 500, stopwords)])
-    max_prob_diff_patterns = patterns_maximizing_prob_diff(tagged_sents, 500)
+    max_prob_diff_words = set([ word for diff, word in words_maximizing_prob_diff(tagged_sents, 300, stopwords)])
+    max_prob_diff_patterns = patterns_maximizing_prob_diff(tagged_sents, 200)
+
+
+    print "Unigrams that maximize class probability differences"
+    print max_prob_diff_words
+
+    print "Bigrams based on Turnkey POS patterns that maximize class probabilty differences"
+    print max_prob_diff_patterns
+
 
     # max_prob_diff_bigrams = set([bigram for diff, bigram in bigrams_maximizing_prob_diff(sents, 500, stopwords)])
     bigrams_best = best_bigrams(sents, stopwords)
 
-    # Extract features.
+    # Extract features. All feature extraction methods are expected to return a dictionary.
     data = []
     for tag, sent in islice(sents,None):
         features = {}
@@ -187,16 +198,19 @@ def main():
         feat4 = feature_patterns(sent, max_prob_diff_patterns)
         #feat5 = feature_bigrams(sent, max_prob_diff_bigrams)
         #feat5 = feature_bigrams(sent, bigrams_best)
-        feat6 = feature_exclamations(sent)
-        feat7 = feature_questionmarks(sent)
-        feat8 = feature_uppercase(sent)
+        #feat6 = feature_exclamations(sent)
+        #feat7 = feature_questionmarks(sent)
+        #feat8 = feature_uppercase(sent)
+        #print sent
+        #print feat6, feat7, feat8
         features.update(feat1)
         features.update(feat2)
         features.update(feat3)
         features.update(feat4)
         #features.update(feat5)
-        features.update(feat6)
-        features.update(feat7)
+        #features.update(feat6)
+        #features.update(feat7)
+
 
         ## Include sent for error analysis
         data.append((features, tag, sent))
@@ -204,10 +218,5 @@ def main():
     print 'Naive Bayes:\t%s' % evaluate(nltk.NaiveBayesClassifier, data, 10, verbose_errors=False)
     #print 'Decision Tree:\t%s' % evaluate(nltk.DecisionTreeClassifier, data, 10)
 
-
 if __name__ == '__main__':
     main()
-
-# <codecell>
-
-
