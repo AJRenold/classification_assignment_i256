@@ -61,8 +61,7 @@ def evaluate(classifier, data, k, verbose_errors=False):
             ref.append(tag)
             test.append(guess)
             if guess != tag and verbose_errors:
-                print guess, tag, 
-                print val_sents[j]
+                print 'guess:', guess, 'actual:', tag, 'SENT:', val_sents[j]
 
         i += 1
         bar.update(i)
