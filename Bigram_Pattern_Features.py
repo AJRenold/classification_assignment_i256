@@ -1,3 +1,6 @@
+
+__author__ = 'AJ Renold & Siddharth Agrawal'
+
 import nltk
 from itertools import islice
 

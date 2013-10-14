@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+__author__ = "AJ Renold"
+
 import os
 import re
 from itertools import islice
