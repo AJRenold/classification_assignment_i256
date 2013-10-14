@@ -72,7 +72,7 @@ def evaluate(classifier, data, k, verbose_errors=False):
         bar.update(i)
     bar.finish()
     print nltk.ConfusionMatrix(ref, test)
-    return sum(accuracies) * 1.0 / len(accuracies)
+    return model, sum(accuracies) * 1.0 / len(accuracies)
 
 
 def sanitize(sents):
@@ -160,9 +160,13 @@ def main():
     heldout_corpus = AssignmentCorpus('product_data_training_heldout/heldout/')
     # We should do cross validation on all the data given
     all_sents = training_corpus.sents + heldout_corpus.sents
+    shuffle(all_sents)
+    split = int(len(all_sents)*.9)
+
+    training , test = all_sents[:split], all_sents[split:]
 
     # This is the data we extract features and do cross validation on.
-    sents = sanitize(all_sents)
+    sents = sanitize(training)
 
     # Do preprocessing for feature extraction
     tagged_sents = get_tagged_sents(sents)
@@ -174,15 +178,8 @@ def main():
 
     stopwords = get_stopwords()
 
-    max_prob_diff_words = set([ word for diff, word in words_maximizing_prob_diff(tagged_sents, 300, stopwords)])
+    max_prob_diff_words = set([ word for diff, word in words_maximizing_prob_diff(tagged_sents, 200, stopwords)])
     max_prob_diff_patterns = patterns_maximizing_prob_diff(tagged_sents, 200)
-
-
-    print "Unigrams that maximize class probability differences"
-    print max_prob_diff_words
-
-    print "Bigrams based on Turnkey POS patterns that maximize class probabilty differences"
-    print max_prob_diff_patterns
 
 
     # max_prob_diff_bigrams = set([bigram for diff, bigram in bigrams_maximizing_prob_diff(sents, 500, stopwords)])
@@ -198,9 +195,9 @@ def main():
         feat4 = feature_patterns(sent, max_prob_diff_patterns)
         #feat5 = feature_bigrams(sent, max_prob_diff_bigrams)
         #feat5 = feature_bigrams(sent, bigrams_best)
-        #feat6 = feature_exclamations(sent)
-        #feat7 = feature_questionmarks(sent)
-        #feat8 = feature_uppercase(sent)
+        feat6 = feature_exclamations(sent)
+        feat7 = feature_questionmarks(sent)
+        feat8 = feature_uppercase(sent)
         #print sent
         #print feat6, feat7, feat8
         features.update(feat1)
@@ -208,14 +205,56 @@ def main():
         features.update(feat3)
         features.update(feat4)
         #features.update(feat5)
-        #features.update(feat6)
-        #features.update(feat7)
+        features.update(feat6)
+        features.update(feat7)
+        features.update(feat8)
 
 
         ## Include sent for error analysis
         data.append((features, tag, sent))
 
-    print 'Naive Bayes:\t%s' % evaluate(nltk.NaiveBayesClassifier, data, 10, verbose_errors=False)
+    model, accuracy = evaluate(nltk.NaiveBayesClassifier, data, 10, verbose_errors=False)
+    print 'Naive Bayes:\t%s' % accuracy
+
+    ## Test on held out data
+    print 'testing on heldout data slice'
+    test_sents = sanitize(test)
+    
+    test_data = []
+    for tag, sent in islice(test_sents,None):
+        features = {}
+        feat1 = feature_adjectives(sent, adjectives)
+        feat2 = feature_adjectives_curated(sent, pos_words, neg_words)
+        feat3 = feature_unigram_probdiff(sent, max_prob_diff_words)
+        feat4 = feature_patterns(sent, max_prob_diff_patterns)
+        #feat5 = feature_bigrams(sent, max_prob_diff_bigrams)
+        #feat5 = feature_bigrams(sent, bigrams_best)
+        feat6 = feature_exclamations(sent)
+        feat7 = feature_questionmarks(sent)
+        feat8 = feature_uppercase(sent)
+        #print sent
+        #print feat6, feat7, feat8
+        features.update(feat1)
+        features.update(feat2)
+        features.update(feat3)
+        features.update(feat4)
+        #features.update(feat5)
+        features.update(feat6)
+        features.update(feat7)
+        features.update(feat8)
+
+        test_data.append((features, tag))
+
+    ref = []
+    g = []
+    test_accuracy = nltk.classify.accuracy(model, test_data)
+    for feat, tag in test_data:
+        guess = model.classify(feat)
+        ref.append(tag)
+        g.append(guess)
+    print nltk.ConfusionMatrix(ref, g)
+    print 'Naive Bayes on Test Data:\t%s' % test_accuracy
+
     #print 'Decision Tree:\t%s' % evaluate(nltk.DecisionTreeClassifier, data, 10)
 
 if __name__ == '__main__':
