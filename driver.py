@@ -19,7 +19,7 @@ from nltk.corpus import stopwords
 from Adjective_Features import get_adjectives, feature_adjectives, feature_adjectives_curated
 from Bigrams_Features import bigrams_maximizing_prob_diff, best_bigrams, feature_bigrams
 from Unigram_Features import words_maximizing_prob_diff, feature_unigram_probdiff
-from Bigram_Pattern_Features import patterns_maximizing_prob_diff, feature_patterns
+from Bigram_Pattern_Features import patterns_maximizing_prob_diff, feature_patterns, feature_patterns_count, pos_and_neg_patterns_maximizing_prob_diff
 from Punctuation_Features import feature_exclamations, feature_questionmarks, feature_uppercase
 
 pr = pprint.PrettyPrinter(indent=2)
@@ -174,8 +174,13 @@ def main():
 
     stopwords = get_stopwords()
 
-    max_prob_diff_words = set([ word for diff, word in words_maximizing_prob_diff(tagged_sents, 150, stopwords)])
-    max_prob_diff_patterns = patterns_maximizing_prob_diff(tagged_sents, 150)
+    max_prob_diff_words = set([ word for diff, word in words_maximizing_prob_diff(tagged_sents, 300, stopwords)])
+    max_patterns_pos, max_patterns_neg = pos_and_neg_patterns_maximizing_prob_diff(tagged_sents, 100)
+    max_prob_diff_patterns = patterns_maximizing_prob_diff(tagged_sents, 300)
+
+    print max_patterns_pos
+    print
+    print max_patterns_neg
 
     # max_prob_diff_bigrams = set([bigram for diff, bigram in bigrams_maximizing_prob_diff(sents, 500, stopwords)])
     bigrams_best = best_bigrams(sents, stopwords)
@@ -193,6 +198,7 @@ def main():
         #feat6 = feature_exclamations(sent)
         #feat7 = feature_questionmarks(sent)
         #feat8 = feature_uppercase(sent)
+        feat9 = feature_patterns_count(sent, max_patterns_pos, max_patterns_neg)
         
         # Update features with extracted features
         features.update(feat1)
@@ -203,7 +209,7 @@ def main():
         #features.update(feat6)
         #features.update(feat7)
         #features.update(feat8)
-
+        features.update(feat9)
 
         ## Include sent for error analysis
         data.append((features, tag, sent))
