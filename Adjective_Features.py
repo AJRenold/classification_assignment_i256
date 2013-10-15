@@ -3,6 +3,7 @@ import json
 import nltk
 from nltk.tokenize import word_tokenize
 
+
 def get_adjectives(tagged_sents):
     adjectives = []
     for tag, pos_tags in tagged_sents:
@@ -15,7 +16,7 @@ def get_adjectives(tagged_sents):
         [a for x, y in adjectives if x < 0 and y for a in y]).keys()[:20]
     best_adj = list(set(pos_adj).union(set(neg_adj)))
     json.dump(best_adj, open('adjectives.json', 'wb'), indent=2)
-    return best_adj
+    return best_adj, pos_adj, neg_adj
 
 
 def feature_adjectives(sent, words):
@@ -27,14 +28,35 @@ def feature_adjectives(sent, words):
     return features
 
 
+def feature_adjectives_count(sent, pos_words, neg_words):
+    sent_words = set([x.lower()
+                     for x in word_tokenize(sent) if x not in string.punctuation])
+    pos, neg = 0, 0
+    for word in sent_words:
+        if word.lower() in pos_words:
+            pos += 1
+        elif word.lower() in neg_words:
+            neg += 1
+    features = {}
+    features['pos_feature_adjectives_count'] = pos
+    features['neg_feature_adjectives_count'] = neg
+    features['diff_feature_adjectives_count'] = pos - neg
+    features['sum_feature_adjectives_count'] = pos + neg
+    return features
+
+
 def feature_adjectives_curated(sent, pos_words, neg_words):
     sent_words = set([x.lower()
                      for x in word_tokenize(sent) if x not in string.punctuation])
-    features = {'pos': 0, 'neg': 0}
+    pos, neg = 0, 0
     for word in sent_words:
         if word.lower() in pos_words:
-            features['pos'] += 1
+            pos += 1
         elif word.lower() in neg_words:
-            features['neg'] += 1
-
+            neg += 1
+    features = {}
+    features['pos_feature_adjectives_curated'] = pos
+    features['neg_feature_adjectives_curated'] = neg
+    features['diff_feature_adjectives_curated'] = pos - neg
+    features['sum_feature_adjectives_curated'] = pos + neg
     return features

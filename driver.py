@@ -15,8 +15,8 @@ import re
 from itertools import islice
 from nltk.corpus import stopwords
 
-## FEATURES ##
-from Adjective_Features import get_adjectives, feature_adjectives, feature_adjectives_curated
+# FEATURES ##
+from Adjective_Features import get_adjectives, feature_adjectives, feature_adjectives_curated, feature_adjectives_count
 from Bigrams_Features import bigrams_maximizing_prob_diff, best_bigrams, feature_bigrams
 from Unigram_Features import words_maximizing_prob_diff, feature_unigram_probdiff
 from Bigram_Pattern_Features import patterns_maximizing_prob_diff, feature_patterns, feature_patterns_count, pos_and_neg_patterns_maximizing_prob_diff
@@ -40,10 +40,10 @@ def k_fold_cross_validation(items, k):
     slices = [items[i::k] for i in xrange(k)]
     for i in xrange(k):
 
-        validation = [ (feat, tag) for feat, tag, sent in slices[i] ]
-        validation_sents = [ sent for feat, tag, sent in slices[i] ]
+        validation = [(feat, tag) for feat, tag, sent in slices[i]]
+        validation_sents = [sent for feat, tag, sent in slices[i]]
 
-        training = [ (feat, tag)
+        training = [(feat, tag)
                     for s in slices if s is not slices[i]
                     for feat, tag, sent in s]
         yield training, validation, validation_sents
@@ -59,7 +59,7 @@ def evaluate(classifier, data, k, verbose_errors=False):
     bar.start()
     for training, validation, val_sents in k_fold_cross_validation(data, k):
         model = classifier.train(training)
-        #model.show_most_informative_features(20)
+        # model.show_most_informative_features(20)
         accuracies.append(nltk.classify.accuracy(model, validation))
         for j, (feat, tag) in enumerate(validation):
             guess = model.classify(feat)
@@ -79,34 +79,35 @@ def sanitize(sents):
     # ignore all sents with no tag or no sent
     sents = [(tag, sent) for tag, sent in sents if sent]
     # simplify each tags list to an average of ratings
-    
-    ### Alternative if we want to exclude sents with positive and negative sentiment
+
+    # Alternative if we want to exclude sents with positive and negative
+    # sentiment
     new_sents = []
     for tag, sent in sents:
         if not tag:
-            new_sents.append((0,sent.strip()))
+            new_sents.append((0, sent.strip()))
         else:
-            pos_sentiment = all([ x[1] > 0 for x in tag])
-            neg_sentiment = all([ x[1] < 0 for x in tag])
+            pos_sentiment = all([x[1] > 0 for x in tag])
+            neg_sentiment = all([x[1] < 0 for x in tag])
             if pos_sentiment:
                 new_sents.append((1, sent.strip()))
             elif neg_sentiment:
                 new_sents.append((-1, sent.strip()))
             else:
                 pass
-                #print tag, sent
+                # print tag, sent
 
     return new_sents
 
     # does it make sense to simplify tags to 1, 0 and -1?
-    #for i in range(len(sents)):
+    # for i in range(len(sents)):
     #    tag, sent = sents[i]
     #    if not tag:
     #        sents[i] = (0, sent)
     #    else:
     #        ratings = [x[1] for x in tag]
     #        avg_rating = sum(ratings) * 1.0 / len(ratings)
-    #        
+    #
     #        if avg_rating > 0:
     #            sents[i] = (1, sent)
     #        elif avg_rating < 0:
@@ -114,19 +115,22 @@ def sanitize(sents):
     #        else:
     #            sents[i] = (0, sent)
     # convert sents to strings instead of lists
-    #for i in range(len(sents)):
+    # for i in range(len(sents)):
     #    tag, sent = sents[i]
     #    if isinstance(sent, list):
     #        print 'list'
     #        sents[i] = (tag, sent[0])
     # remove whitespace in sents
     #sents = [(tag, sent.strip()) for tag, sent in sents]
-    #return sents
+    # return sents
+
 
 def get_stopwords():
-    return { word: True for word in stopwords.words('english') }
+    return {word: True for word in stopwords.words('english')}
 
 # this can be an AssignmentCorpus method
+
+
 def get_tagged_sents(sents):
 
     try:
@@ -166,7 +170,7 @@ def main():
 
     # Do preprocessing for feature extraction
     tagged_sents = get_tagged_sents(sents)
-    adjectives = get_adjectives(tagged_sents)
+    adjectives, pos_adj, neg_adj = get_adjectives(tagged_sents)
     # adjectives = json.load(open('adjectives.json'))
     pos_words = set([str(x) for x in json.load(open('positive_words.json'))])
     neg_words = set([str(x) for x in json.loads(open('negative_words.json')
@@ -174,49 +178,53 @@ def main():
 
     stopwords = get_stopwords()
 
-    max_prob_diff_words = set([ word for diff, word in words_maximizing_prob_diff(tagged_sents, 300, stopwords)])
-    max_patterns_pos, max_patterns_neg = pos_and_neg_patterns_maximizing_prob_diff(tagged_sents, 100)
+    max_prob_diff_words = set(
+        [word for diff, word in words_maximizing_prob_diff(tagged_sents, 300, stopwords)])
+    max_patterns_pos, max_patterns_neg = pos_and_neg_patterns_maximizing_prob_diff(
+        tagged_sents, 100)
     max_prob_diff_patterns = patterns_maximizing_prob_diff(tagged_sents, 300)
 
-    print max_patterns_pos
-    print
-    print max_patterns_neg
-
-    # max_prob_diff_bigrams = set([bigram for diff, bigram in bigrams_maximizing_prob_diff(sents, 500, stopwords)])
+    max_prob_diff_bigrams = set(
+        [bigram for diff, bigram in bigrams_maximizing_prob_diff(sents, 500, stopwords)])
     bigrams_best = best_bigrams(sents, stopwords)
 
-    # Extract features. All feature extraction methods are expected to return a dictionary.
+    # Extract features. All feature extraction methods are expected to return
+    # a dictionary.
     data = []
-    for tag, sent in islice(sents,None):
+    for tag, sent in islice(sents, None):
         features = {}
-        feat1 = feature_adjectives(sent, adjectives)
+        feat0 = feature_adjectives_count(sent, pos_adj, neg_adj)
+        # feat1 = feature_adjectives(sent, adjectives)
         feat2 = feature_adjectives_curated(sent, pos_words, neg_words)
-        feat3 = feature_unigram_probdiff(sent, max_prob_diff_words)
-        feat4 = feature_patterns(sent, max_prob_diff_patterns)
-        #feat5 = feature_bigrams(sent, max_prob_diff_bigrams)
-        #feat5 = feature_bigrams(sent, bigrams_best)
-        #feat6 = feature_exclamations(sent)
-        #feat7 = feature_questionmarks(sent)
-        #feat8 = feature_uppercase(sent)
-        feat9 = feature_patterns_count(sent, max_patterns_pos, max_patterns_neg)
-        
-        # Update features with extracted features
-        features.update(feat1)
-        features.update(feat2)
-        features.update(feat3)
-        features.update(feat4)
-        #features.update(feat5)
-        #features.update(feat6)
-        #features.update(feat7)
-        #features.update(feat8)
-        features.update(feat9)
+        # feat3 = feature_unigram_probdiff(sent, max_prob_diff_words)
+        # feat4 = feature_patterns(sent, max_prob_diff_patterns)
+        # feat5 = feature_bigrams(sent, max_prob_diff_bigrams)
+        # feat5 = feature_bigrams(sent, bigrams_best)
+        # feat6 = feature_exclamations(sent)
+        # feat7 = feature_questionmarks(sent)
+        # feat8 = feature_uppercase(sent)
+        # feat9 = feature_patterns_count(sent, max_patterns_pos, max_patterns_neg)
 
-        ## Include sent for error analysis
+        # Update features with extracted features
+        features.update(feat0)
+        # features.update(feat1)
+        features.update(feat2)
+        # features.update(feat3)
+        # features.update(feat4)
+        # features.update(feat5)
+        # features.update(feat6)
+        # features.update(feat7)
+        # features.update(feat8)
+        # features.update(feat9)
+
+        # Include sent for error analysis
         data.append((features, tag, sent))
 
-    model, accuracy = evaluate(nltk.NaiveBayesClassifier, data, 10, verbose_errors=False)
+    model, accuracy = evaluate(
+        nltk.NaiveBayesClassifier, data, 10, verbose_errors=False)
     print 'Naive Bayes:\t%s' % accuracy
-    #print 'Decision Tree:\t%s' % evaluate(nltk.DecisionTreeClassifier, data, 10)
+    model, accuracy = evaluate(nltk.DecisionTreeClassifier, data, 10)
+    print 'Decision Tree:\t%s' % accuracy
 
 if __name__ == '__main__':
     main()
