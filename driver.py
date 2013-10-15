@@ -14,13 +14,11 @@ import pickle
 import re
 from itertools import islice
 from nltk.corpus import stopwords
-
-# FEATURES ##
 from Adjective_Features import get_adjectives, feature_adjectives, feature_adjectives_curated, feature_adjectives_count
 from Bigrams_Features import bigrams_maximizing_prob_diff, best_bigrams, feature_bigrams
 from Unigram_Features import words_maximizing_prob_diff, feature_unigram_probdiff
 from Bigram_Pattern_Features import patterns_maximizing_prob_diff, feature_patterns, feature_patterns_count, pos_and_neg_patterns_maximizing_prob_diff
-from Punctuation_Features import feature_exclamations, feature_questionmarks, feature_uppercase
+from Punctuation_Features import feature_exclamations, feature_questionmarks, feature_uppercase, feature_emoticons, feature_sentlength
 
 pr = pprint.PrettyPrinter(indent=2)
 
@@ -50,11 +48,8 @@ def k_fold_cross_validation(items, k):
 
 
 def evaluate(classifier, data, k, verbose_errors=False):
-    accuracies = []
-    ref = []
-    test = []
-
-    print 'evaluating %s using k fold cross validation. k = %s' % (classifier, k)
+    accuracies, ref, test = [], [], []
+    print 'Using %s with k = %s' % (classifier, k)
     i, bar = 0, pbar(k)
     bar.start()
     for training, validation, val_sents in k_fold_cross_validation(data, k):
@@ -71,72 +66,46 @@ def evaluate(classifier, data, k, verbose_errors=False):
         i += 1
         bar.update(i)
     bar.finish()
+    print 'Accuracy: %s' % (sum(accuracies) * 1.0 / len(accuracies))
     print nltk.ConfusionMatrix(ref, test)
-    return model, sum(accuracies) * 1.0 / len(accuracies)
+    return model
+
+
+def removeNonAscii(s):
+    return "".join(i for i in s if ord(i) < 128)
 
 
 def sanitize(sents):
     # ignore all sents with no tag or no sent
     sents = [(tag, sent) for tag, sent in sents if sent]
-    # simplify each tags list to an average of ratings
-
-    # Alternative if we want to exclude sents with positive and negative
-    # sentiment
+    # We exclude sents with positive and negative sentiment
     new_sents = []
     for tag, sent in sents:
+        sent = sent.strip()
+        sent = removeNonAscii(sent)
+        if len(sent) < 20:
+            continue
         if not tag:
-            new_sents.append((0, sent.strip()))
+            new_sents.append((0, sent))
         else:
             pos_sentiment = all([x[1] > 0 for x in tag])
             neg_sentiment = all([x[1] < 0 for x in tag])
             if pos_sentiment:
-                new_sents.append((1, sent.strip()))
+                new_sents.append((1, sent))
             elif neg_sentiment:
-                new_sents.append((-1, sent.strip()))
-            else:
-                pass
-                # print tag, sent
-
+                new_sents.append((-1, sent))
     return new_sents
-
-    # does it make sense to simplify tags to 1, 0 and -1?
-    # for i in range(len(sents)):
-    #    tag, sent = sents[i]
-    #    if not tag:
-    #        sents[i] = (0, sent)
-    #    else:
-    #        ratings = [x[1] for x in tag]
-    #        avg_rating = sum(ratings) * 1.0 / len(ratings)
-    #
-    #        if avg_rating > 0:
-    #            sents[i] = (1, sent)
-    #        elif avg_rating < 0:
-    #            sents[i] = (-1, sent)
-    #        else:
-    #            sents[i] = (0, sent)
-    # convert sents to strings instead of lists
-    # for i in range(len(sents)):
-    #    tag, sent = sents[i]
-    #    if isinstance(sent, list):
-    #        print 'list'
-    #        sents[i] = (tag, sent[0])
-    # remove whitespace in sents
-    #sents = [(tag, sent.strip()) for tag, sent in sents]
-    # return sents
 
 
 def get_stopwords():
     return {word: True for word in stopwords.words('english')}
 
-# this can be an AssignmentCorpus method
-
 
 def get_tagged_sents(sents):
-
     try:
-        with open('tagged_sents.pkl', 'rb') as infile:
-            print 'Tagged_sentences pickle found, delete tagged_sents.pkl to reset cache'
-            tagged_sents = pickle.load(infile)
+        with open('tagged_sents.json', 'rb') as infile:
+            print 'tagged_sentences.json found, delete tagged_sents.json to reset cache'
+            tagged_sents = json.load(infile)
             return tagged_sents
     except:
         print 'No tagged sentences stored'
@@ -151,10 +120,9 @@ def get_tagged_sents(sents):
         bar.update(i)
     bar.finish()
 
-    print 'caching tagged_sents as tagged_sents.pkl'
-    with open('tagged_sents.pkl', 'wb') as outfile:
-        pickle.dump(tagged_sents, outfile)
-
+    print 'caching tagged_sents as tagged_sents.json'
+    with open('tagged_sents.json', 'wb') as outfile:
+        json.dump(tagged_sents, outfile, indent=2)
     return tagged_sents
 
 
@@ -162,7 +130,7 @@ def main():
     training_corpus = AssignmentCorpus(
         'product_data_training_heldout/training/')
     heldout_corpus = AssignmentCorpus('product_data_training_heldout/heldout/')
-    # We should do cross validation on all the data given
+    # Perform cross validation on all the data given
     all_sents = training_corpus.sents + heldout_corpus.sents
 
     # This is the data we extract features and do cross validation on.
@@ -171,13 +139,11 @@ def main():
     # Do preprocessing for feature extraction
     tagged_sents = get_tagged_sents(sents)
     adjectives, pos_adj, neg_adj = get_adjectives(tagged_sents)
-    # adjectives = json.load(open('adjectives.json'))
     pos_words = set([str(x) for x in json.load(open('positive_words.json'))])
     neg_words = set([str(x) for x in json.loads(open('negative_words.json')
                                                 .read().decode('utf-8', 'ignore'))])
 
     stopwords = get_stopwords()
-
     max_prob_diff_words = set(
         [word for diff, word in words_maximizing_prob_diff(tagged_sents, 300, stopwords)])
     max_patterns_pos, max_patterns_neg = pos_and_neg_patterns_maximizing_prob_diff(
@@ -189,42 +155,32 @@ def main():
     bigrams_best = best_bigrams(sents, stopwords)
 
     # Extract features. All feature extraction methods are expected to return
-    # a dictionary.
+    # a dictionary with distinct keys.
     data = []
     for tag, sent in islice(sents, None):
         features = {}
-        feat0 = feature_adjectives_count(sent, pos_adj, neg_adj)
-        # feat1 = feature_adjectives(sent, adjectives)
-        feat2 = feature_adjectives_curated(sent, pos_words, neg_words)
-        # feat3 = feature_unigram_probdiff(sent, max_prob_diff_words)
-        # feat4 = feature_patterns(sent, max_prob_diff_patterns)
-        # feat5 = feature_bigrams(sent, max_prob_diff_bigrams)
-        # feat5 = feature_bigrams(sent, bigrams_best)
-        # feat6 = feature_exclamations(sent)
-        # feat7 = feature_questionmarks(sent)
-        # feat8 = feature_uppercase(sent)
-        # feat9 = feature_patterns_count(sent, max_patterns_pos, max_patterns_neg)
-
-        # Update features with extracted features
-        features.update(feat0)
-        # features.update(feat1)
-        features.update(feat2)
-        # features.update(feat3)
-        # features.update(feat4)
-        # features.update(feat5)
-        # features.update(feat6)
-        # features.update(feat7)
-        # features.update(feat8)
-        # features.update(feat9)
-
-        # Include sent for error analysis
+        features.update(feature_adjectives_count(sent, pos_adj, neg_adj))
+        features.update(feature_adjectives(sent, adjectives))
+        features.update(feature_adjectives_curated(sent, pos_words, neg_words))
+        features.update(feature_unigram_probdiff(sent, max_prob_diff_words))
+        features.update(feature_bigrams(sent, max_prob_diff_bigrams))
+        features.update(feature_bigrams(sent, bigrams_best))
+        features.update(feature_patterns(sent, max_prob_diff_patterns))
+        features.update(feature_patterns_count(
+            sent, max_patterns_pos, max_patterns_neg))
+        features.update(feature_exclamations(sent))
+        features.update(feature_questionmarks(sent))
+        features.update(feature_emoticons(sent))
+        features.update(feature_uppercase(sent))
+        features.update(feature_sentlength(sent))
         data.append((features, tag, sent))
 
-    model, accuracy = evaluate(
-        nltk.NaiveBayesClassifier, data, 10, verbose_errors=False)
-    print 'Naive Bayes:\t%s' % accuracy
-    model, accuracy = evaluate(nltk.DecisionTreeClassifier, data, 10)
-    print 'Decision Tree:\t%s' % accuracy
+    print 'Gathered %s features.' % len(data[0][0])
+    classifiers = [nltk.NaiveBayesClassifier,
+                   nltk.DecisionTreeClassifier,
+                   ]
+    for classifier in classifiers:
+        evaluate(classifier, data, 10, verbose_errors=False)
 
 if __name__ == '__main__':
     main()

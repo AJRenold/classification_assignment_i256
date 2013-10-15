@@ -1,5 +1,7 @@
+
+__author__ = 'Jeff Tsui'
+
 import string
-import json
 import nltk
 from nltk.tokenize import word_tokenize
 
@@ -15,7 +17,6 @@ def get_adjectives(tagged_sents):
     neg_adj = nltk.FreqDist(
         [a for x, y in adjectives if x < 0 and y for a in y]).keys()[:20]
     best_adj = list(set(pos_adj).union(set(neg_adj)))
-    json.dump(best_adj, open('adjectives.json', 'wb'), indent=2)
     return best_adj, pos_adj, neg_adj
 
 
@@ -38,6 +39,8 @@ def feature_adjectives_count(sent, pos_words, neg_words):
         elif word.lower() in neg_words:
             neg += 1
     features = {}
+    pos = pos * 1.0 / len(sent_words)
+    neg = neg * 1.0 / len(sent_words)
     features['pos_feature_adjectives_count'] = pos
     features['neg_feature_adjectives_count'] = neg
     features['diff_feature_adjectives_count'] = pos - neg
@@ -55,6 +58,8 @@ def feature_adjectives_curated(sent, pos_words, neg_words):
         elif word.lower() in neg_words:
             neg += 1
     features = {}
+    pos = pos * 1.0 / len(sent_words)
+    neg = neg * 1.0 / len(sent_words)
     features['pos_feature_adjectives_curated'] = pos
     features['neg_feature_adjectives_curated'] = neg
     features['diff_feature_adjectives_curated'] = pos - neg
