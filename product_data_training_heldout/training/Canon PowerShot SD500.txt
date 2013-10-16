@@ -3,7 +3,7 @@ SD500[+2]##We really enjoyed shooting with the Canon PowerShot SD500.
 design[+2]##It has an exterior design that combines form and function more elegantly than any point-and-shoot we've ever tested. 
 image-processing system[+1]##A Digic II-powered image-processing system enables the SD500 to snap a limitless stream of 7-megapixel photos at a respectable clip, its start-up time is tops in its class, and it delivers decent photos when compared to its competition. 
 image[+2]##The SD500 rivals the Canon G6 in image quality. 
-##I've had it for about a month and it is simply the best point-and-shoot your money can buy. 
+[+1]##I've had it for about a month and it is simply the best point-and-shoot your money can buy. 
 ##I sincerely question the CNET reviewer's ability and/or their bias. 
 ##If you want something resembling a REAL and professional review before plunking down your $500.00, I suggest going to dpreview or dcresource and reading the reviews there. 
 ##I post under JTL at dcresource...check out my images if you want to see what this camera can do. 

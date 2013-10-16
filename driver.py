@@ -14,7 +14,7 @@ import pickle
 import re
 from itertools import islice
 from nltk.corpus import stopwords
-from Adjective_Features import get_adjectives, feature_adjectives, feature_adjectives_curated, feature_adjectives_count
+from Adjective_Features import get_adjectives, feature_adjectives, feature_adjectives_curated, feature_adjectives_count, feature_adjectives_curated_with_negation
 from Bigrams_Features import bigrams_maximizing_prob_diff, best_bigrams, feature_bigrams
 from Unigram_Features import words_maximizing_prob_diff, feature_unigram_probdiff
 from Bigram_Pattern_Features import patterns_maximizing_prob_diff, feature_patterns, feature_patterns_count, pos_and_neg_patterns_maximizing_prob_diff
@@ -48,20 +48,25 @@ def k_fold_cross_validation(items, k):
 
 
 def evaluate(classifier, data, k, verbose_errors=False):
+
+    pos_words = set([str(x) for x in json.load(open('positive_words.json'))])
+
     accuracies, ref, test = [], [], []
     print 'Using %s with k = %s' % (classifier, k)
     i, bar = 0, pbar(k)
     bar.start()
     for training, validation, val_sents in k_fold_cross_validation(data, k):
         model = classifier.train(training)
-        # model.show_most_informative_features(20)
+        #model.show_most_informative_features(50)
         accuracies.append(nltk.classify.accuracy(model, validation))
         for j, (feat, tag) in enumerate(validation):
             guess = model.classify(feat)
             ref.append(tag)
             test.append(guess)
             if guess != tag and verbose_errors:
-                print 'guess:', guess, 'actual:', tag, 'SENT:', val_sents[j]
+                if guess == 1 and tag == -1:
+                    if any([ word.lower() in pos_words for word in val_sents[j].split(' ') ]):
+                        print 'guess:', guess, 'actual:', tag, 'SENT:', val_sents[j]
 
         i += 1
         bar.update(i)
@@ -147,40 +152,53 @@ def main():
     max_prob_diff_words = set(
         [word for diff, word in words_maximizing_prob_diff(tagged_sents, 300, stopwords)])
     max_patterns_pos, max_patterns_neg = pos_and_neg_patterns_maximizing_prob_diff(
-        tagged_sents, 100)
+        tagged_sents, 150)
     max_prob_diff_patterns = patterns_maximizing_prob_diff(tagged_sents, 300)
 
-    max_prob_diff_bigrams = set(
-        [bigram for diff, bigram in bigrams_maximizing_prob_diff(sents, 500, stopwords)])
-    bigrams_best = best_bigrams(sents, stopwords)
+    print max_patterns_pos
+    print
+    print max_patterns_neg
+
+    bigrams_best = best_bigrams(sents, stopwords, n=50)
 
     # Extract features. All feature extraction methods are expected to return
     # a dictionary with distinct keys.
     data = []
     for tag, sent in islice(sents, None):
+        #print sent
         features = {}
         features.update(feature_adjectives_count(sent, pos_adj, neg_adj))
+
         features.update(feature_adjectives(sent, adjectives))
-        features.update(feature_adjectives_curated(sent, pos_words, neg_words))
+        #features.update(feature_adjectives_curated(sent, pos_words, neg_words))
+        features.update(feature_adjectives_curated_with_negation(sent, pos_words, neg_words))
+
         features.update(feature_unigram_probdiff(sent, max_prob_diff_words))
-        features.update(feature_bigrams(sent, max_prob_diff_bigrams))
-        features.update(feature_bigrams(sent, bigrams_best))
+        #features.update(feature_bigrams(sent, bigrams_best))
         features.update(feature_patterns(sent, max_prob_diff_patterns))
+
+        #print feature_patterns(sent, max_prob_diff_patterns)
+        #print feature_patterns_count(
+        #    sent, max_patterns_pos, max_patterns_neg)
+
         features.update(feature_patterns_count(
             sent, max_patterns_pos, max_patterns_neg))
-        features.update(feature_exclamations(sent))
-        features.update(feature_questionmarks(sent))
+        #features.update(feature_exclamations(sent))
+        #features.update(feature_questionmarks(sent))
         features.update(feature_emoticons(sent))
-        features.update(feature_uppercase(sent))
-        features.update(feature_sentlength(sent))
+        #features.update(feature_uppercase(sent))
+        #features.update(feature_sentlength(sent))
         data.append((features, tag, sent))
 
     print 'Gathered %s features.' % len(data[0][0])
     classifiers = [nltk.NaiveBayesClassifier,
                    nltk.DecisionTreeClassifier,
                    ]
-    for classifier in classifiers:
-        evaluate(classifier, data, 10, verbose_errors=False)
+    for i, classifier in enumerate(classifiers):
+        model = evaluate(classifier, data, 10, verbose_errors=False)
+        with open('nltk_model'+str(i)+'.pkl', 'wb') as outfile:
+            pickle.dump(model, outfile)
+
 
 if __name__ == '__main__':
     main()

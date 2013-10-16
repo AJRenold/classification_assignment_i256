@@ -23,7 +23,7 @@ def feature_exclamations(sent):
     # length
     features = {}
     letter = '!'
-    features["count(%s)" % letter] = sent.count(letter) / len(sent)
+    features["count(%s)" % letter] = sent.count(letter)# / len(sent)
     return features
 
 
@@ -33,7 +33,7 @@ def feature_questionmarks(sent):
 
     features = {}
     letter = '?'
-    features["count(%s)" % letter] = sent.count(letter) / len(sent)
+    features["count(%s)" % letter] = sent.count(letter)# / len(sent)
     return features
 
 
@@ -43,7 +43,7 @@ def feature_commas(sent):
 
     features = {}
     letter = ','
-    features["count(%s)" % letter] = sent.count(letter) / len(sent)
+    features["count(%s)" % letter] = sent.count(letter)# / len(sent)
     return features
 
 
@@ -52,7 +52,7 @@ def feature_semicolons(sent):
     # length
     features = {}
     letter = ';'
-    features["count(%s)" % letter] = sent.count(letter) / len(sent)
+    features["count(%s)" % letter] = sent.count(letter)# / len(sent)
     return features
 
 
@@ -65,7 +65,7 @@ def feature_uppercase(sent):
     for word in sent_words:
         if word.isupper():
             capscount += 1
-    features["capscount(%s)" % capscount] = capscount / len(sent)
+    features["capscount(%s)" % capscount] = capscount# / len(sent)
     return features
 
 
@@ -80,10 +80,7 @@ def feature_sentlength(sent):
 def feature_emoticons(sent):
     # This function returns the presence of emoticons in sentence
     features = {}
-    emoticons = [
-        ':)', ':-)', ':(', ':o', ':/', ":'(", '>:o', '(:', '>.<', 'XD',
-        '-__-', 'o.O', ';D', '@_@', ':P', '8D', ':1', '>:(', ':D', '=|',
-                '")', ':>', ':*', ';)']
+    emoticons = [':)', ':-)', '=)']
     for emoticon in emoticons:
         features["emoticon(%s)" % emoticon] = emoticon in sent
     return features

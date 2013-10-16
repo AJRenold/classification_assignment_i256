@@ -56,12 +56,29 @@ def words_maximizing_prob_diff(tagged_sents, n, stopwords):
     return get_max_diff(words, pos, neg)[:n]
 
 def feature_unigram_probdiff(sent, max_diff_words):
+    negation_words = set(['but','however','although'])
+
     features = {}
     #for word in word_tokenize(sent):
     #    if word in max_diff_words:
     #        features['contains({})'.format(word)] = True
-    sent_words = set(word_tokenize(sent.lower()))
-    for word in max_diff_words:
-        features['contains(%s)' % word] = word in sent_words
+    sent_words = sent_words = [x.lower()
+                     for x in word_tokenize(sent) if x not in string.punctuation]
+    
+    len_sent = len(sent_words)
+    for i, word in enumerate(sent_words):
+        lidx = 0 if i - 3 < 0 else i - 3
+        uidx = len_sent if i + 3 > len_sent else i + 3
+
+        if word in max_diff_words:
+            if any( w == 'not' for w in sent_words[lidx:i+1] ):
+                pass
+            elif any( w in negation_words for w in sent[lidx:uidx+1]):
+                pass
+            else:
+                features['contains(%s)' % word] = True
+    
+    #for word in max_diff_words:
+    #    features['contains(%s)' % word] = word in sent_words
 
     return features

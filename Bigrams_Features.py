@@ -7,6 +7,11 @@ import string
 import itertools
 
 
+ex = set(['battery', 'files', 'music', 'mode', 't-mobile', 'shoe', 'retail','flashes',
+        'earbuds','software','optical','digital', 'camera', 'blue', 'zoom','jack','white',
+        'music', 'alphabetical', 'scan', 'usb', 'drive', 'bags', 'kitchen', 'firmware', 'labs',
+        'diaper','wheel','pad','mediasource'])
+
 def best_bigrams(sents_tagged, stopwords, score_fn=BigramAssocMeasures.likelihood_ratio, n=300):
     sents_pos = []
     sents_neg = []
@@ -33,7 +38,10 @@ def best_bigrams(sents_tagged, stopwords, score_fn=BigramAssocMeasures.likelihoo
     bigrams_all = list(set(bigrams_best_pos).union(set(bigrams_best_neg)))
 
     # Select only the bigrams that have either one of the word greater than length 3
-    bigrams_best = [bigram for bigram in bigrams_all if (len(bigram[0]) > 3 or len(bigram[1]) > 3)]
+    bigrams_best = [bigram for bigram in bigrams_all
+            if len(bigram[0]) > 3 and len(bigram[1]) > 3
+            and bigram[0] not in ex and bigram[1] not in ex ]
+
 
     return bigrams_best
 
