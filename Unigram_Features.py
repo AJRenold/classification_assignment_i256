@@ -64,7 +64,7 @@ def feature_unigram_probdiff(sent, max_diff_words):
     #        features['contains({})'.format(word)] = True
     sent_words = sent_words = [x.lower()
                      for x in word_tokenize(sent) if x not in string.punctuation]
-    
+    """
     len_sent = len(sent_words)
     for i, word in enumerate(sent_words):
         lidx = 0 if i - 3 < 0 else i - 3
@@ -77,8 +77,8 @@ def feature_unigram_probdiff(sent, max_diff_words):
                 pass
             else:
                 features['contains(%s)' % word] = True
-    
-    #for word in max_diff_words:
-    #    features['contains(%s)' % word] = word in sent_words
+    """
+    for word in max_diff_words:
+        features['contains(%s)' % word] = word in sent_words
 
     return features

@@ -73,10 +73,10 @@ def labelData(test_data, model):
 
     stopwords = get_stopwords()
     max_prob_diff_words = set(
-        [word for diff, word in words_maximizing_prob_diff(tagged_sents, 300, stopwords)])
+        [word for diff, word in words_maximizing_prob_diff(tagged_sents, 150, stopwords)])
     max_patterns_pos, max_patterns_neg = pos_and_neg_patterns_maximizing_prob_diff(
-        tagged_sents, 150)
-    max_prob_diff_patterns = patterns_maximizing_prob_diff(tagged_sents, 300)
+        tagged_sents, 100)
+    max_prob_diff_patterns = patterns_maximizing_prob_diff(tagged_sents, 150)
 
     bigrams_best = best_bigrams(sents, stopwords, n=50)
 
@@ -90,23 +90,19 @@ def labelData(test_data, model):
         features.update(feature_adjectives_curated_with_negation(sent, pos_words, neg_words))
 
         features.update(feature_unigram_probdiff(sent, max_prob_diff_words))
-        features.update(feature_bigrams(sent, bigrams_best))
+        #features.update(feature_bigrams(sent, bigrams_best))
         features.update(feature_patterns(sent, max_prob_diff_patterns))
-
-        #print feature_patterns(sent, max_prob_diff_patterns)
-        #print feature_patterns_count(
-        #    sent, max_patterns_pos, max_patterns_neg)
 
         features.update(feature_patterns_count(
             sent, max_patterns_pos, max_patterns_neg))
-        #features.update(feature_exclamations(sent))
+        features.update(feature_exclamations(sent))
         #features.update(feature_questionmarks(sent))
         features.update(feature_emoticons(sent))
         #features.update(feature_uppercase(sent))
         #features.update(feature_sentlength(sent))
 
         #print features
-        print model.classify(features)
+        #print model.classify(features)
         if sent == '[t]':
             labelled.append((fname, line_num, 0))
         else:
@@ -117,16 +113,19 @@ def labelData(test_data, model):
 
 def main():
 
-    files = getFiles('testset/')
-    test_data = readFiles(files, 'testset/')
+    files = getFiles('testdata/')
+    test_data = readFiles(files, 'testdata/')
 
     model = getModel('nltk_model0.pkl')
     model.show_most_informative_features(50)
 
     labelled_data = labelData(test_data, model)
 
-    for fname, line_num, score in labelled_data:
-        print fname, line_num, score
+    with open('output_G9.txt','w') as outfile:
+        for fname, line_num, score in labelled_data:
+            line = fname+'\t'+str(line_num)+'\t'+str(score)+'\n'
+            outfile.write(line)
+        #print fname, line_num, score
 
 if __name__ == '__main__':
     main()

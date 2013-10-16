@@ -150,14 +150,14 @@ def main():
 
     stopwords = get_stopwords()
     max_prob_diff_words = set(
-        [word for diff, word in words_maximizing_prob_diff(tagged_sents, 300, stopwords)])
+        [word for diff, word in words_maximizing_prob_diff(tagged_sents, 150, stopwords)])
     max_patterns_pos, max_patterns_neg = pos_and_neg_patterns_maximizing_prob_diff(
-        tagged_sents, 150)
+        tagged_sents, 100)
     max_prob_diff_patterns = patterns_maximizing_prob_diff(tagged_sents, 300)
 
-    print max_patterns_pos
-    print
-    print max_patterns_neg
+    #print max_patterns_pos
+    #print
+    #print max_patterns_neg
 
     bigrams_best = best_bigrams(sents, stopwords, n=50)
 
@@ -167,7 +167,7 @@ def main():
     for tag, sent in islice(sents, None):
         #print sent
         features = {}
-        features.update(feature_adjectives_count(sent, pos_adj, neg_adj))
+        #features.update(feature_adjectives_count(sent, pos_adj, neg_adj))
 
         features.update(feature_adjectives(sent, adjectives))
         #features.update(feature_adjectives_curated(sent, pos_words, neg_words))
@@ -183,7 +183,7 @@ def main():
 
         features.update(feature_patterns_count(
             sent, max_patterns_pos, max_patterns_neg))
-        #features.update(feature_exclamations(sent))
+        features.update(feature_exclamations(sent))
         #features.update(feature_questionmarks(sent))
         features.update(feature_emoticons(sent))
         #features.update(feature_uppercase(sent))
@@ -198,7 +198,7 @@ def main():
         model = evaluate(classifier, data, 10, verbose_errors=False)
         with open('nltk_model'+str(i)+'.pkl', 'wb') as outfile:
             pickle.dump(model, outfile)
-
+        
 
 if __name__ == '__main__':
     main()
