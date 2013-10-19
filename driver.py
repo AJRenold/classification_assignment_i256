@@ -150,7 +150,6 @@ def get_tagged_sents(sents):
             return tagged_sents
     except:
         print 'No tagged sentences stored'
-
     print 'tagging sentences'
     tagged_sents = []
     i, bar = 0, pbar(len(sents))
@@ -160,7 +159,6 @@ def get_tagged_sents(sents):
         i += 1
         bar.update(i)
     bar.finish()
-
     print 'caching tagged_sents as tagged_sents.json'
     with open('tagged_sents.json', 'wb') as outfile:
         json.dump(tagged_sents, outfile, indent=2)
@@ -183,41 +181,27 @@ def main():
     pos_words = set([str(x) for x in json.load(open('positive_words.json'))])
     neg_words = set([str(x) for x in json.loads(open('negative_words.json')
                                                 .read().decode('utf-8', 'ignore'))])
-
     stopwords = get_stopwords()
     max_prob_diff_words = set(
         [word for diff, word in words_maximizing_prob_diff(tagged_sents, 150, stopwords)])
     max_patterns_pos, max_patterns_neg = pos_and_neg_patterns_maximizing_prob_diff(
         tagged_sents, 100)
     max_prob_diff_patterns = patterns_maximizing_prob_diff(tagged_sents, 300)
-
-    # print max_patterns_pos
-    # print
-    # print max_patterns_neg
-
     bigrams_best = best_bigrams(sents, stopwords, n=50)
 
     # Extract features. All feature extraction methods are expected to return
     # a dictionary with distinct keys.
     data = []
     for tag, sent in islice(sents, None):
-        # print sent
         features = {}
         #features.update(feature_adjectives_count(sent, pos_adj, neg_adj))
-
         features.update(feature_adjectives(sent, adjectives))
         #features.update(feature_adjectives_curated(sent, pos_words, neg_words))
         features.update(
             feature_adjectives_curated_with_negation(sent, pos_words, neg_words))
-
         features.update(feature_unigram_probdiff(sent, max_prob_diff_words))
         #features.update(feature_bigrams(sent, bigrams_best))
         features.update(feature_patterns(sent, max_prob_diff_patterns))
-
-        # print feature_patterns(sent, max_prob_diff_patterns)
-        # print feature_patterns_count(
-        #    sent, max_patterns_pos, max_patterns_neg)
-
         features.update(feature_patterns_count(
             sent, max_patterns_pos, max_patterns_neg))
         features.update(feature_exclamations(sent))
@@ -229,7 +213,7 @@ def main():
 
     print 'Gathered %s features.' % len(data[0][0])
     classifiers = [nltk.NaiveBayesClassifier,
-                   nltk.DecisionTreeClassifier,
+                   # nltk.DecisionTreeClassifier,
                    ]
     for i, classifier in enumerate(classifiers):
         model = evaluate(classifier, data, 10, verbose_errors=False)
