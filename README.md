@@ -30,9 +30,9 @@ Adjectives - We extract a few features by finding adjectives that reflect sentim
 Punctuation Features - Here we implemented the functions suggested in "Gender Classification" paper discussed in class. It covers following features:
 1. Syntactic features
  1.1 Exclamation marks - This feature returns the ratio of no. of exclamation marks and sentence
- 1.1 Question marks - This feature returns the ratio of no. of question marks and sentence
- 1.1 Commas - This feature returns the ratio of no. of commas marks and sentence
- 1.1 Semicolons - This feature returns the ratio of no. of semicolons marks and sentence
+ 1.2 Question marks - This feature returns the ratio of no. of question marks and sentence
+ 1.3 Commas - This feature returns the ratio of no. of commas marks and sentence
+ 1.4 Semicolons - This feature returns the ratio of no. of semicolons marks and sentence
 2. Word based features
  2.1 Uppercase words - This feature returns the count of all uppercase words in the sentence.
  2.2 Length of the review - This feature returns the total length of the input sentence
